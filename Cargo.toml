@@ -1,0 +1,9 @@
+[package]
+name = "sigmaos_craft_craftlibs"
+version = "0.1.0"
+edition = "2021"
+description = "Core foundation utilities, color spaces, and vector math for Craft creative suite"
+
+[lib]
+name = "sigmaos_craft_craftlibs"
+path = "src/lib.rs"
