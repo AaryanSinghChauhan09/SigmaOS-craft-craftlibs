@@ -1,41 +1,62 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct RgbaColor {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
-    pub a: f32,
+// SPDX-License-Identifier: Apache-2.0
+//! SigmaOS-craft-craftlibs — SigmaOS craft-craftlibs component inspired by Linux Mint / Omarchy / Arch Linux.
+//!
+//! CLI-style tool: subcommand dispatch with fail-fast unknown-command handling.
+//! Principles: single responsibility, fail-fast, defensive programming,
+//! component isolation, stable API, deterministic tests.
+
+#![forbid(unsafe_code)]
+
+use std::fmt;
+/// Errors for `ToolError` operations. Fail-fast: invalid input is rejected.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ToolError {
+    /// Tool name must not be empty
+    EmptyName,
+    /// Unrecognized subcommand
+    UnknownCommand(String),
+    /// Subcommand requires arguments
+    MissingArgs(String),
 }
 
-impl RgbaColor {
-    pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        Self { r, g, b, a }
-    }
-
-    pub fn to_luminance(&self) -> f32 {
-        0.2126 * self.r + 0.7152 * self.g + 0.0722 * self.b
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Transform2D {
-    pub m11: f32, pub m12: f32,
-    pub m21: f32, pub m22: f32,
-    pub dx: f32,  pub dy: f32,
-}
-
-impl Default for Transform2D {
-    fn default() -> Self {
-        Self { m11: 1.0, m12: 0.0, m21: 0.0, m22: 1.0, dx: 0.0, dy: 0.0 }
+impl fmt::Display for ToolError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyName => write!(f, "tool name must not be empty"),
+            Self::UnknownCommand(x) => write!(f, "unrecognized subcommand: {x}"),
+            Self::MissingArgs(x) => write!(f, "subcommand requires arguments: {x}"),
+        }
     }
 }
 
-impl Transform2D {
-    pub fn translate(dx: f32, dy: f32) -> Self {
-        Self { m11: 1.0, m12: 0.0, m21: 0.0, m22: 1.0, dx, dy }
+impl std::error::Error for ToolError {}
+
+/// A command-line tool with a small fixed subcommand set.
+#[derive(Debug)]
+pub struct Tool {
+    name: String,
+}
+
+impl Tool {
+    /// Create the tool; fails fast on empty name.
+    pub fn new(name: impl Into<String>) -> Result<Self, ToolError> {
+        let name = name.into();
+        if name.trim().is_empty() { return Err(ToolError::EmptyName); }
+        Ok(Self { name })
     }
 
-    pub fn apply(&self, x: f32, y: f32) -> (f32, f32) {
-        (self.m11 * x + self.m21 * y + self.dx, self.m12 * x + self.m22 * y + self.dy)
+    /// Tool name.
+    pub fn name(&self) -> &str { &self.name }
+
+    /// Dispatch a subcommand. Supported: `status`, `version`, `help`.
+    /// Commands needing args that get none fail fast.
+    pub fn run(&self, args: &[&str]) -> Result<String, ToolError> {
+        match args.first().copied().unwrap_or("help") {
+            "status" => Ok(format!("{}: ready", self.name)),
+            "version" => Ok(format!("{}: 0.1.0", self.name)),
+            "help" => Ok(format!("{}: commands: status, version, help", self.name)),
+            other => Err(ToolError::UnknownCommand(other.to_string())),
+        }
     }
 }
 
@@ -44,15 +65,40 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_transform_and_color() {
-        // Arrange
-        let color = RgbaColor::new(1.0, 1.0, 1.0, 1.0);
-        let t = Transform2D::translate(10.0, 20.0);
-        // Act
-        let lum = color.to_luminance();
-        let (nx, ny) = t.apply(5.0, 5.0);
-        // Assert
-        assert!((lum - 1.0).abs() < 1e-4);
-        assert_eq!((nx, ny), (15.0, 25.0));
+    fn status_and_version() {
+        let t = Tool::new("demo").unwrap();
+        assert_eq!(t.run(&["status"]).unwrap(), "demo: ready");
+        assert!(t.run(&["version"]).unwrap().contains("0.1.0"));
+    }
+
+    #[test]
+    fn no_args_shows_help() {
+        let t = Tool::new("demo").unwrap();
+        assert!(t.run(&[]).unwrap().contains("commands"));
+    }
+
+    #[test]
+    fn unknown_command_fails() {
+        let t = Tool::new("demo").unwrap();
+        assert!(matches!(t.run(&["bogus"]), Err(ToolError::UnknownCommand(_))));
+    }
+
+    #[test]
+    fn empty_name_fails() {
+        assert!(Tool::new(" ").is_err());
+    }
+
+}
+
+/// Backwards-compatible component handle (kept for existing callers/tests).
+#[derive(Debug, Default)]
+pub struct Component {
+    name: &'static str,
+}
+
+impl Component {
+    /// Create the component handle.
+    pub fn new() -> Self {
+        Self { name: "SigmaOS Component" }
     }
 }
