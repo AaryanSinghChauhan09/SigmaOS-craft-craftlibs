@@ -65,29 +65,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn status_and_version() {
+    fn test_status_and_version_aaa() {
+        // Arrange
         let t = Tool::new("demo").unwrap();
+        // Act & Assert
         assert_eq!(t.run(&["status"]).unwrap(), "demo: ready");
         assert!(t.run(&["version"]).unwrap().contains("0.1.0"));
     }
 
     #[test]
-    fn no_args_shows_help() {
+    fn test_no_args_shows_help_aaa() {
+        // Arrange
         let t = Tool::new("demo").unwrap();
+        // Act & Assert
         assert!(t.run(&[]).unwrap().contains("commands"));
     }
 
     #[test]
-    fn unknown_command_fails() {
+    fn test_unknown_command_fails_aaa() {
+        // Arrange
         let t = Tool::new("demo").unwrap();
+        // Act & Assert
         assert!(matches!(t.run(&["bogus"]), Err(ToolError::UnknownCommand(_))));
     }
 
     #[test]
-    fn empty_name_fails() {
+    fn test_empty_name_fails_aaa() {
+        // Arrange & Act & Assert
         assert!(Tool::new(" ").is_err());
     }
-
 }
 
 /// Backwards-compatible component handle (kept for existing callers/tests).
