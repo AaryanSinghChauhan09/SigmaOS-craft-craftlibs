@@ -3,7 +3,7 @@ name = "SigmaOS-craft-craftlibs"
 tier = 3
 stability = "stable"
 language = "rust"
-description = "Core foundation utilities, color spaces, and vector math for Craft creative suite"
+description = "No GitHub description is set; component scope remains unclassified."
 upstream = []
 
 [contract]
