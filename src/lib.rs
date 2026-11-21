@@ -7,6 +7,9 @@
 
 #![forbid(unsafe_code)]
 
+/// Shared libraries management module.
+pub mod sigmacraftlibs;
+
 use std::fmt;
 /// Errors for `ToolError` operations. Fail-fast: invalid input is rejected.
 #[derive(Debug, Clone, PartialEq, Eq)]
